@@ -32,8 +32,6 @@ def main():
     
     print("Received {} training set images so far".format(len(df_out)))
     sys.stdout.flush()
-    
-    return
 
     df_out.to_csv('./2018-current.csv.gz', compression='gzip')
     
