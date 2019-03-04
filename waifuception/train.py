@@ -144,14 +144,14 @@ def build_model(lr):
     optimizer = RMSprop(lr=lr, decay=0.9, epsilon=1.0, clipvalue=2.0)
 
     model = Model(inputs=base_model.input, outputs=predictions)
-    model.load_weights('/mnt/data/waifuception-checkpoints-2/weights.027-0.4452.hdf5')
+    #model.load_weights('/mnt/data/waifuception-checkpoints-2/weights.027-0.4452.hdf5')
     model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=[subset_accuracy_score, n_differing_labels])
     #model.summary()
 
     return model
 
 def main():
-    base_lr = 0.025
+    base_lr = 0.045
     
     dataset = tf.data.TFRecordDataset('/mnt/data/danbooru2018-preprocessed/dataset-2.tfrecords')
     dataset = dataset.apply(tf.data.experimental.ignore_errors())
@@ -183,9 +183,9 @@ def main():
         validation_steps = n_batches_eval,
         epochs           = 200,
         verbose          = 1,
-        initial_epoch    = 27,
+        initial_epoch    = 0,
         callbacks=[
-            callbacks.ModelCheckpoint('/mnt/data/waifuception-checkpoints-2/weights.{epoch:03d}-{val_loss:.4f}.hdf5'),
+            callbacks.ModelCheckpoint('/mnt/data/waifuception-checkpoints-3/weights.{epoch:03d}-{val_loss:.4f}.hdf5'),
             callbacks.LearningRateScheduler(lambda epoch, cur_lr: base_lr * np.power(0.94, (epoch+1) // 2)),
             callbacks.TensorBoard('/mnt/data/tensorboard-logs')
         ]
