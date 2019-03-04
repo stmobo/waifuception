@@ -2,6 +2,7 @@ import pandas as pd
 import math
 import numpy as np
 import tensorflow as tf
+import os
 
 from tensorflow.keras.applications import inception_v3
 from tensorflow.keras.models import Model
@@ -161,12 +162,12 @@ def main():
     
     eval_dataset  = dataset.take(eval_len)
     eval_dataset  = eval_dataset.apply(tf.data.experimental.shuffle_and_repeat(500))
-    eval_dataset  = eval_dataset.apply(tf.data.experimental.map_and_batch(_parse_proto, 32, num_parallel_calls=4))
+    eval_dataset  = eval_dataset.apply(tf.data.experimental.map_and_batch(_parse_proto, 32, num_parallel_calls=os.cpu_count()))
     eval_dataset  = eval_dataset.prefetch(1)
     
     train_dataset = dataset.skip(eval_len)
     train_dataset = train_dataset.apply(tf.data.experimental.shuffle_and_repeat(500))
-    train_dataset = train_dataset.apply(tf.data.experimental.map_and_batch(_parse_proto, 32, num_parallel_calls=4))
+    train_dataset = train_dataset.apply(tf.data.experimental.map_and_batch(_parse_proto, 32, num_parallel_calls=os.cpu_count()))
     train_dataset = train_dataset.prefetch(1)
     
     print("Building model...")
