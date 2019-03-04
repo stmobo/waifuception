@@ -1,0 +1,7 @@
+**/*.gz
+**/*.xz
+**/*.hdf5
+**/*.csv
+
+metadata/
+preprocessed/
