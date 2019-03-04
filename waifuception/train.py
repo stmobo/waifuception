@@ -123,6 +123,9 @@ def _parse_proto(example_proto):
     #img_out = tf.image.random_flip_up_down(img_out)
     #img_out = tf.contrib.image.rotate(img_out, tf.random.uniform([], 0, 2*np.pi))
     
+    # NOTE: the pretrained models expect input image pixels to lie in the range [-1, 1]!
+    img_out = (img_out - 0.5) * 2.0
+    
     true_labels = tf.cast(parsed_features['labels'], tf.float32)
     train_labels = ((1.0 - label_e) * true_labels) + (label_e / N_CLASSES)
     

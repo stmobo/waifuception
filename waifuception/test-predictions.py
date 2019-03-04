@@ -124,6 +124,7 @@ def main():
         arr = np.asarray(resized, np.uint8)
         arr = arr.astype(np.float32) / 255.0
         arr -= img_mean
+        arr = (arr - 0.5) * 2.0 # models are trained with pixels in the range [-1, 1]
         arr = np.expand_dims(arr, 0)
         
         
