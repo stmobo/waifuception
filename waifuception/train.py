@@ -117,7 +117,7 @@ def _parse_proto(example_proto):
     img_decoded = tf.decode_raw(parsed_features['img'], tf.uint8)
     img_out = tf.image.convert_image_dtype(tf.reshape(img_decoded, (299, 299, 3)), tf.float32)
     
-    img_out = img_out - img_mean
+    #img_out = img_out - img_mean
     
     #img_out = tf.image.random_flip_left_right(img_out)
     #img_out = tf.image.random_flip_up_down(img_out)
