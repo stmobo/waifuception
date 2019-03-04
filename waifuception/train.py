@@ -96,7 +96,7 @@ N_CLASSES = sum([len(cat) for cat in tags_list])
 DATASET_LENGTH = 301785
 label_e = 0.1 # label smoothing epsilon value
 
-img_mean = np.load('/mnt/data/dataset_mean.npy')
+#img_mean = np.load('/mnt/data/dataset_mean.npy')
 
 def subset_accuracy_score(y_true, y_pred):
     differing_labels = K.sum(K.abs(y_true - K.round(y_pred)), axis=1)
@@ -105,6 +105,15 @@ def subset_accuracy_score(y_true, y_pred):
 def n_differing_labels(y_true, y_pred):
     differing_labels = K.sum(K.abs(y_true - K.round(y_pred)), axis=1)
     return K.mean(differing_labels)
+
+def false_positives(y_true, y_pred):
+    return K.mean(K.sum(K.cast(K.greater(K.round(y_pred), y_true), 'float32'), axis=1))
+    
+def false_negatives(y_true, y_pred):
+    return K.mean(K.sum(K.cast(K.greater(y_true, K.round(y_pred)), 'float32'), axis=1))
+
+def weighted_crossentropy(y_true, y_pred):
+    return tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, 2.0)
 
 def _parse_proto(example_proto):
     features = {
@@ -127,8 +136,8 @@ def _parse_proto(example_proto):
     # NOTE: the pretrained models expect input image pixels to lie in the range [-1, 1]!
     img_out = (img_out - 0.5) * 2.0
     
-    #true_labels = tf.cast(parsed_features['labels'], tf.float32)
-    train_labels = ((1.0 - label_e) * true_labels) + (label_e / N_CLASSES)
+    true_labels = tf.cast(parsed_features['labels'], tf.float32)
+    #train_labels = ((1.0 - label_e) * true_labels) + (label_e / N_CLASSES)
     
     return img_out, true_labels
 
@@ -136,7 +145,7 @@ def build_model(lr):
     base_model = inception_v3.InceptionV3(weights='imagenet', include_top=False, pooling='avg')
 
     x = base_model.output
-    x = Dropout(0.20)(x)
+    #x = Dropout(0.20)(x)
     predictions = Dense(N_CLASSES, activation='sigmoid')(x)
 
     #for layer in base_model.layers:
@@ -146,7 +155,7 @@ def build_model(lr):
 
     model = Model(inputs=base_model.input, outputs=predictions)
     #model.load_weights('/mnt/data/waifuception-checkpoints-2/weights.027-0.4452.hdf5')
-    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=[subset_accuracy_score, n_differing_labels])
+    model.compile(optimizer=optimizer, loss=weighted_crossentropy, metrics=[n_differing_labels, false_positives, false_negatives])
     #model.summary()
 
     return model
