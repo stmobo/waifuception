@@ -127,10 +127,10 @@ def _parse_proto(example_proto):
     # NOTE: the pretrained models expect input image pixels to lie in the range [-1, 1]!
     img_out = (img_out - 0.5) * 2.0
     
-    true_labels = tf.cast(parsed_features['labels'], tf.float32)
+    #true_labels = tf.cast(parsed_features['labels'], tf.float32)
     train_labels = ((1.0 - label_e) * true_labels) + (label_e / N_CLASSES)
     
-    return img_out, train_labels
+    return img_out, true_labels
 
 def build_model(lr):
     base_model = inception_v3.InceptionV3(weights='imagenet', include_top=False, pooling='avg')
@@ -142,7 +142,7 @@ def build_model(lr):
     #for layer in base_model.layers:
     #    layer.trainable = False
 
-    optimizer = RMSprop(lr=lr, decay=0.9, epsilon=1.0, clipvalue=2.0)
+    optimizer = RMSprop(lr=lr, rho=0.9, epsilon=1.0, clipvalue=2.0)
 
     model = Model(inputs=base_model.input, outputs=predictions)
     #model.load_weights('/mnt/data/waifuception-checkpoints-2/weights.027-0.4452.hdf5')
@@ -156,6 +156,7 @@ def main():
     
     dataset = tf.data.TFRecordDataset('/mnt/data/danbooru2018-preprocessed/dataset-2.tfrecords')
     dataset = dataset.apply(tf.data.experimental.ignore_errors())
+    dataset = dataset.take(DATASET_LENGTH)
     
     eval_len = int(DATASET_LENGTH * 0.1)
     train_len = DATASET_LENGTH - eval_len
@@ -173,8 +174,8 @@ def main():
     print("Building model...")
     model = build_model(base_lr)
 
-    n_batches_train = math.ceil(train_len / 32) - 1
-    n_batches_eval = math.ceil(eval_len / 32) - 1
+    n_batches_train = math.ceil(train_len / 32)
+    n_batches_eval = math.ceil(eval_len / 32)
     
     print("Starting training.")
     model.fit(
