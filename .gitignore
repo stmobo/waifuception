@@ -3,5 +3,7 @@
 **/*.hdf5
 **/*.csv
 
-metadata/
-preprocessed/
+metadata/*
+preprocessed/*
+
+!preprocessed/2018-full.csv.gz
