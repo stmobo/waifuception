@@ -2,6 +2,7 @@
 **/*.xz
 **/*.hdf5
 **/*.csv
+**/*.tfrecords
 
 metadata/*
 preprocessed/*
