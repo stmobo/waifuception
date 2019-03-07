@@ -91,7 +91,7 @@ tags_list = [
     (False, breast_tags),       
     (False, ass_tags),          
     (False, pose_tags),         
-    (False, attire_tags),       
+    (True, attire_tags),       
 ]
 
 N_CLASSES = sum([len(cat) for _, cat in filter(lambda o: o[0], tags_list)]) 
