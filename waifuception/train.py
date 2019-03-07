@@ -98,9 +98,7 @@ N_CLASSES = sum([len(cat) for _, cat in filter(lambda o: o[0], tags_list)])
 DATASET_LENGTH = 300000
 label_e = 0.1 # label smoothing epsilon value
 
-#img_mean = np.load('./dataset_mean-small.npy')
-#img_mean = np.mean(img_mean, axis=(0, 1), keepdims=True)
-#img_mean = (img_mean - 0.5) * 2.0
+#img_mean = np.load('/mnt/data/dataset_mean.npy')
 
 def subset_accuracy_score(y_true, y_pred):
     differing_labels = K.sum(K.abs(y_true - K.round(y_pred)), axis=1)
@@ -135,6 +133,15 @@ def filter_active_categories(inputs):
             concat_inputs.append(tensor)
             
     return tf.concat(concat_inputs, axis=-1)
+
+def false_positives(y_true, y_pred):
+    return K.mean(K.sum(K.cast(K.greater(K.round(y_pred), y_true), 'float32'), axis=1))
+    
+def false_negatives(y_true, y_pred):
+    return K.mean(K.sum(K.cast(K.greater(y_true, K.round(y_pred)), 'float32'), axis=1))
+
+def weighted_crossentropy(y_true, y_pred):
+    return tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, 2.0)
 
 def _parse_proto(example_proto):
     features = {
@@ -215,8 +222,8 @@ def main():
     print("Building model...")
     model = build_model(base_lr)
 
-    n_batches_train = math.ceil(train_len / 32) - 1
-    n_batches_eval = math.ceil(eval_len / 32) - 1
+    n_batches_train = math.ceil(train_len / 32)
+    n_batches_eval = math.ceil(eval_len / 32)
     
     print("Starting training.")
     model.fit(
