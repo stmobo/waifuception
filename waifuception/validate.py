@@ -7,8 +7,8 @@ from PIL import Image
 from pathlib import Path
 import shutil
 
-from tensorflow.keras.applications import inception_v3
-from tensorflow.keras.models import Model
+from tensorflow.keras.applications import ResNet50
+from tensorflow.keras.models import load_model, Model
 from tensorflow.keras.layers import Dense, Dropout, Input
 from tensorflow.keras import callbacks
 from tensorflow.keras import metrics
@@ -79,8 +79,8 @@ attire_tags = [
 
 # list of tag categories, in order
 tags_list = [
-    (False, gender_tags),       
-    (False, rating_classes),    
+    (True, gender_tags),       
+    (True, rating_classes),    
     (True, hair_color_tags),   
     (True, hair_length_tags),  
     (True, hair_style_tags),   
@@ -90,7 +90,7 @@ tags_list = [
     (False, breast_tags),       
     (False, ass_tags),          
     (False, pose_tags),         
-    (False, attire_tags),       
+    (True, attire_tags),       
 ]
 
 flat_tags = []
@@ -101,16 +101,64 @@ for active, cat in tags_list:
 
 N_CLASSES = sum([len(cat) for _, cat in filter(lambda o: o[0], tags_list)]) 
 
+
+def false_positive_rate(y_true, y_pred):
+    fp = K.sum(K.cast(K.greater(K.round(y_pred), K.round(y_true)), 'float32'), axis=1) # false positive
+    cn = K.sum(K.cast(K.equal(K.round(y_true), 0), 'float32'), axis=1)                 # condition negative
+    
+    return K.mean(fp / cn)
+    
+def false_negative_rate(y_true, y_pred):
+    fn = K.sum(K.cast(K.greater(K.round(y_true), K.round(y_pred)), 'float32'), axis=1) # false negative
+    cp = K.sum(K.cast(K.equal(K.round(y_true), 1), 'float32'), axis=1)                 # condition positive
+    
+    return K.mean(fn / cp)
+    
+def true_positive_rate(y_true, y_pred):
+    predicted_true = K.equal(K.round(y_pred), 1)
+    condition_true = K.equal(K.round(y_true), 1)
+    
+    true_positives = K.all(K.stack(
+        [predicted_true,
+        condition_true],
+        axis=2
+    ), axis=2)
+    
+    tp = K.sum(K.cast(true_positives, 'float32'), axis=1)
+    cp = K.sum(K.cast(condition_true, 'float32'), axis=1)
+    
+    return K.mean(tp / cp)
+
+def true_negative_rate(y_true, y_pred):
+    predicted_false = K.equal(K.round(y_pred), 0)
+    condition_false = K.equal(K.round(y_true), 0)
+    
+    true_negatives = K.all(K.stack(
+        [predicted_false,
+        condition_false],
+        axis=2
+    ), axis=2)
+    
+    tn = K.sum(K.cast(true_negatives, 'float32'), axis=1)
+    cn = K.sum(K.cast(condition_false, 'float32'), axis=1)
+    
+    return K.mean(tn / cn)
+
+def weighted_crossentropy(y_true, y_pred):
+    return tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, 28)
+
 def build_model():
-    base_model = inception_v3.InceptionV3(weights=None, include_top=False, pooling='avg')
+    base_model = ResNet50(weights='imagenet', include_top=False, pooling='avg')
 
     x = base_model.output
     #x = Dropout(0.20)(x)
     predictions = Dense(N_CLASSES, activation='sigmoid')(x)
 
     model = Model(inputs=base_model.input, outputs=predictions)
-    model.load_weights('./tmp-weights/weights.010.hdf5')
-
+    model.load_weights('./tmp-weights/weights.021.1.3933.hdf5')
+    
+    for layer in model.layers:
+        layer.trainable = False
     return model
 
 def main():

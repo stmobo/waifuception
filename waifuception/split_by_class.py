@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+from pathlib import Path
+import json
 
 gender_tags = ['female', 'male']
 rating_classes = ['safe', 'questionable', 'explicit']
@@ -66,42 +68,37 @@ attire_tags = [
 
 # list of tag categories, in order
 tags_list = [
-    gender_tags,       
-    rating_classes,    
-    hair_color_tags,   
-    hair_length_tags,  
-    hair_style_tags,   
-    eye_color_tags,    
-    eye_misc_tags,     
-    expression_tags,   
-    breast_tags,       
-    ass_tags,          
-    pose_tags,         
-    attire_tags,       
+    (True, gender_tags),       
+    (True, rating_classes),    
+    (True, hair_color_tags),   
+    (True, hair_length_tags),  
+    (True, hair_style_tags),   
+    (True, eye_color_tags),
+    (True, eye_misc_tags),
+    (True, expression_tags),
+    (False, breast_tags),       
+    (False, ass_tags),
+    (False, pose_tags),
+    (True, attire_tags),
 ]
 
-N_CLASSES = sum([len(cat) for cat in tags_list])
+N_CLASSES = sum([len(cat) for _, cat in filter(lambda o: o[0], tags_list)]) 
+
+all_classes = []
+for _, cls in tags_list:
+    all_classes.extend(cls)
 
 def main():
-    df = pd.read_csv('./2018-current.csv.gz', index_col=0)
+    print("Loading metadata...")
+    df = pd.read_csv('./2018-current.csv.gz', index_col=1)
     
-    print(df.head())
-    
-    n_images = len(df)
-    tag_sums = df.sum(axis=0, numeric_only=True)
-    
-    total_tag_count = np.sum(tag_sums.values[1:])
-    invalid_classes = []
-    
-    for idx, val in tag_sums.iteritems():
-        if idx != 'id':
-            if val < 500:
-                invalid_classes.append(idx)
-                continue
-                
-            print("{:22s}: {:6d} images ({:4.2%})".format(idx, val, val / total_tag_count))
-    
-    for c in invalid_classes:
-        print("Class does not have enough samples: {} ({} samples)".format(c, tag_sums[c]))
+    for cls in all_classes:
+        print("Processing: "+cls)
+        filtered = df.loc[df[cls] == 1]
+        by_class = [idx for idx, _ in filtered.iterrows()]
+        
+        with open('./danbooru2018-preprocessed/split_classes/{}.json'.format(cls), 'w', encoding='utf-8') as f:
+            json.dump(by_class, f)
+        
 if __name__ == '__main__':
     main()

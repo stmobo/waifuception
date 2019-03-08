@@ -85,16 +85,10 @@ tags_list = [
     ('eye color', eye_color_tags),    
     ('eye misc.', eye_misc_tags),     
     ('expression', expression_tags),   
-    ('breasts', breast_tags),       
-    ('ass', ass_tags),          
-    ('pose', pose_tags),         
     ('attire', attire_tags),       
 ]
 
 N_CLASSES = sum([len(cat) for _, cat in tags_list])
-DATASET_LENGTH = 301785
-
-img_mean = np.load('./dataset_mean.npy')
 
 def subset_accuracy_score(y_true, y_pred):
     differing_labels = K.sum(K.abs(y_true - K.round(y_pred)), axis=1)
@@ -112,7 +106,10 @@ def build_model():
     predictions = Dense(N_CLASSES, activation='sigmoid')(x)
 
     model = Model(inputs=base_model.input, outputs=predictions)
-    model.load_weights('./weights.027-0.4452.hdf5')
+    model.load_weights('./tmp-weights/weights.003.1.6028.hdf5')
+    
+    for layer in model.layers:
+        layer.trainable = False
 
     return model
 
