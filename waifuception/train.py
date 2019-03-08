@@ -87,7 +87,7 @@ tags_list = [
     [True, gender_tags,         'softmax', 'gender'],       
     [True, rating_classes,      'softmax', 'rating'],    
     [True, hair_color_tags,     'sigmoid', 'hair_color'],   
-    [True, hair_length_tags,    'sigmoid', 'hair_length'],  
+    [True, hair_length_tags,    'softmax', 'hair_length'],  
     [True, hair_style_tags,     'sigmoid', 'hair_style'],   
     [True, eye_color_tags,      'sigmoid', 'eye_color'],    
     [True, eye_misc_tags,       'sigmoid', 'eye_misc'],     
@@ -328,6 +328,7 @@ def build_model(lr):
     
     heads = []
     losses = {}
+    metrics = {}
     for active, taglist, activation_fn, name in tags_list:
         if not active:
             continue
@@ -336,6 +337,7 @@ def build_model(lr):
         
         if activation_fn == 'softmax_plus_no_class':
             activation_fn = 'softmax'
+            out_units += 1
         
         head = residual_block(x, [128, 128, 512], name+'_a', resize_shortcut=True)
         head = residual_block(head, [128, 128, 512], name+'_b')
@@ -349,8 +351,10 @@ def build_model(lr):
         
         if activation_fn == 'softmax':
             losses[name] = 'categorical_crossentropy'
+            metrics[name] = 'categorical_accuracy'
         elif activation_fn == 'sigmoid':
             losses[name] = 'binary_crossentropy'
+            metrics[name] = [false_positive_rate, false_negative_rate]
 
     optimizer = RMSprop(lr=lr, rho=0.9, epsilon=1.0, clipvalue=2.0)
 
@@ -375,7 +379,7 @@ def build_model(lr):
     else:
         top_weightsfile_epoch = 0
         
-    model.compile(optimizer=optimizer, loss=losses, metrics=[false_positive_rate, false_negative_rate])
+    model.compile(optimizer=optimizer, loss=losses, metrics=metrics)
     #model.summary()
 
     return model, top_weightsfile_epoch
@@ -434,8 +438,8 @@ def main():
             callbacks.ModelCheckpoint(weights_dir+'weights.{epoch:03d}.{val_loss:.04f}.hdf5'),
             #callbacks.LearningRateScheduler(lambda epoch, cur_lr: base_lr * np.power(0.87, epoch)),
             callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=2, min_lr=0.0001),
-            callbacks.TensorBoard('/mnt/data/tensorboard-logs'),
-            ClassifierMetrics(eval_dataset, n_batches_eval)
+            callbacks.TensorBoard('/mnt/data/tensorboard-logs', update_freq=700),
+            #ClassifierMetrics(eval_dataset, n_batches_eval)
         ]
     )
     
