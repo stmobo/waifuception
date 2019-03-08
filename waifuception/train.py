@@ -93,7 +93,7 @@ tags_list = [
     [True, eye_misc_tags,       'sigmoid', 'eye_misc'],     
     [True, expression_tags,     'sigmoid', 'expression'],   
     [True, breast_tags,         'softmax_plus_no_class', 'breasts'],       
-    [True, ass_tags,            'softmax_plus_no_class', 'ass'],          
+    [True, ass_tags,            'sigmoid', 'ass'],          
     [True, pose_tags,           'softmax_plus_no_class', 'pose'],
     [True, attire_tags,         'sigmoid', 'attire'],       
 ]
@@ -292,31 +292,27 @@ def _parse_proto(example_proto):
     
     #train_labels = ((1.0 - label_e) * true_labels) + (label_e / N_CLASSES)
     
-    
-    
     return img_out, true_label_categories
 
 def residual_block(x, filters, name, strides=(1,1), resize_shortcut=False):
-    blk = Conv2D(filters[0], (1, 1), kernel_initializer='he_normal', strides=strides, name='res_'+name+'_2a')(x)
-    blk = BatchNormalization(axis=-1, name='bn_'+name+'_2a')(blk)
-    blk = Activation('relu')(blk)
+    preactivation = BatchNormalization(axis=-1, name='bn_'+name+'_preact')(x)
+    preactivation = Activation('relu')(preactivation)
+    blk = Conv2D(filters[0], (1, 1), kernel_initializer='he_normal', strides=strides, name='res_'+name+'_a')(preactivation)
     
-    blk = Conv2D(filters[1], (3, 3), kernel_initializer='he_normal', padding='same', name='res_'+name+'_2b')(blk)
-    blk = BatchNormalization(axis=-1, name='bn_'+name+'_2b')(blk)
+    blk = BatchNormalization(axis=-1, name='bn_'+name+'_b')(blk)
     blk = Activation('relu')(blk)
+    blk = Conv2D(filters[1], (3, 3), kernel_initializer='he_normal', padding='same', name='res_'+name+'_b')(blk)
     
-    blk = Conv2D(filters[2], (1, 1), kernel_initializer='he_normal', name='res_'+name+'_2c')(blk)
-    blk = BatchNormalization(axis=-1, name='bn_'+name+'_2c')(blk)
+    blk = BatchNormalization(axis=-1, name='bn_'+name+'_c')(blk)
+    blk = Activation('relu')(blk)
+    blk = Conv2D(filters[2], (1, 1), kernel_initializer='he_normal', name='res_'+name+'_c')(blk)
     
     if resize_shortcut:
-        shortcut = Conv2D(filters[2], (1, 1), strides=strides, name='res_'+name+'_1')(x)
-        shortcut = BatchNormalization(axis=-1, name='bn_'+name+'_1')(shortcut)
+        shortcut = Conv2D(filters[2], (1, 1), strides=strides, name='res_'+name+'_shortcut')(preactivation)
     else:
         shortcut = x
         
     blk = Add()([blk, shortcut])
-    blk = Activation('relu')(blk)
-    
     return blk
 
 def build_model(lr):
@@ -325,9 +321,10 @@ def build_model(lr):
     base_model = ResNet50(weights='imagenet', include_top=False, input_shape=(299, 299, 3), pooling=None)
 
     x = base_model.output
-    
-    # Add one more residual block to the model output:
-    x = residual_block(x, [256, 256, 1024], 'prehead', resize_shortcut=True)
+    x = residual_block(x, [256, 256, 1024], 'prehead_1', resize_shortcut=True)
+    x = residual_block(x, [256, 256, 1024], 'prehead_2')
+    x = residual_block(x, [256, 256, 1024], 'prehead_3')
+    x = residual_block(x, [256, 256, 1024], 'prehead_4')
     
     heads = []
     losses = {}
@@ -340,7 +337,11 @@ def build_model(lr):
         if activation_fn == 'softmax_plus_no_class':
             activation_fn = 'softmax'
         
-        head = residual_block(x, [128, 128, 512], name, resize_shortcut=True)
+        head = residual_block(x, [128, 128, 512], name+'_a', resize_shortcut=True)
+        head = residual_block(head, [128, 128, 512], name+'_b')
+        head = residual_block(head, [128, 128, 512], name+'_c')
+        head = residual_block(head, [128, 128, 512], name+'_d')
+        
         head = GlobalAveragePooling2D()(head)
         head = Dense(out_units, activation=activation_fn, name=name)(head)
         
@@ -374,7 +375,7 @@ def build_model(lr):
     else:
         top_weightsfile_epoch = 0
         
-    model.compile(optimizer=optimizer, loss=losses, loss_weights=list(category_weights), metrics=[false_positive_rate, false_negative_rate])
+    model.compile(optimizer=optimizer, loss=losses, metrics=[false_positive_rate, false_negative_rate])
     #model.summary()
 
     return model, top_weightsfile_epoch
