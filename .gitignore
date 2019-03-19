@@ -10,4 +10,5 @@ images/*
 split_classes/*
 split_classes_2/*
 
+__pycache__/
 !preprocessed/2018-full.csv.gz

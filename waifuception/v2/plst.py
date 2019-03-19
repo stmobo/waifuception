@@ -1,8 +1,9 @@
 from sklearn.utils.extmath import randomized_svd
 import numpy as np
 import pandas as pd
+import sys
 
-from . import classes as c
+import classes as c
 
 def project_label(y_true, U):
     """
@@ -19,7 +20,7 @@ def decode_pred(y_pred, U):
 n_components = 75
 def __plst_main():
     print("Loading metadata...")
-    df = pd.read_csv('./2018-current.csv.gz', index_col='id')
+    df = pd.read_csv(sys.argv[1], index_col='id', nrows=50000)
     
     filtered = df.filter(items=c.all_tags)
     X = filtered.values.T
@@ -31,15 +32,17 @@ def __plst_main():
                                   n_iter=5,
                                   random_state=None)
     
+    print("Component explained variances:")
     sum_sigma = np.sum(np.power(Sigma, 2))
     explained_variance = np.zeros(n_components)
+    cur_total = 0
     for i in range(n_components):
-        explained_variance[i] = (Sigma[i,i]**2) / sum_sigma
-        print("    {}: {:.3f}".format(i, explained_variance[i]))
+        explained_variance[i] = (Sigma[i]**2) / sum_sigma
+        cur_total += explained_variance[i]
+        print("    {}: {:.3f} / {:.3f}".format(i, explained_variance[i], cur_total))
         
-    print("Total explained variance: "+str(np.sum(explained_variance))) 
-
-    np.save(U, './plst_u.npy')
+    print("Total explained variance: {}".format(np.sum(explained_variance))) 
+    np.save('./plst_u.npy', U)
 
 if __name__ == '__main__':
     __plst_main()

@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import sys
 
 gender_tags = ['female', 'male']
 rating_classes = ['safe', 'questionable', 'explicit']
@@ -77,31 +78,59 @@ tags_list = [
     breast_tags,       
     ass_tags,          
     pose_tags,         
-    attire_tags,       
+    attire_tags,
 ]
+
+all_tags = []
+for l in tags_list:
+    all_tags.extend(l)
 
 N_CLASSES = sum([len(cat) for cat in tags_list])
 
 def main():
-    df = pd.read_csv('./2018-current.csv.gz', index_col=0)
-    
+    df = pd.read_csv(sys.argv[1], index_col=0)
+    filtered = df.filter(items=all_tags)
     print(df.head())
     
-    n_images = len(df)
-    tag_sums = df.sum(axis=0, numeric_only=True)
+    n_images = len(filtered)
+    tag_sums = filtered.sum(axis=0, numeric_only=True)
     
-    total_tag_count = np.sum(tag_sums.values[1:])
+    total_tag_count = np.sum(tag_sums.values)
     invalid_classes = []
+    imrs = {}
     
     for idx, val in tag_sums.iteritems():
         if idx != 'id':
-            if val < 500:
+            if val < 1:
                 invalid_classes.append(idx)
                 continue
-                
-            print("{:22s}: {:6d} images ({:4.2%})".format(idx, val, val / total_tag_count))
+            
+            n_neg = (n_images - val)
+            imbalance_ratio = max(n_neg, val) / min(n_neg, val)
+            imrs[idx] = imbalance_ratio
+    
+    imr_vals = list(imrs.values())
+    std = np.std(imr_vals)
+    
+    filtered_imrs = []
+    for idx, val in tag_sums.iteritems():
+        if idx == 'id' or idx not in imrs:
+            continue
+            
+        if imrs[idx] > (2*std):
+            print("{:22s}: {:6d} images (IMR = {:.3f}) (outlier)".format(idx, val, imrs[idx]))
+            continue
+        
+        filtered_imrs.append(imrs[idx])
+        print("{:22s}: {:6d} images (IMR = {:.3f})".format(idx, val, imrs[idx]))
     
     for c in invalid_classes:
         print("Class does not have enough samples: {} ({} samples)".format(c, tag_sums[c]))
+        
+    print("Average IMR: {:.3f} (w/o outliers)".format(np.mean(filtered_imrs)))
+    print("StdDev:      {:.3f}".format(std))
+    print("Min IMR:     {:.3f}".format(np.amin(filtered_imrs)))
+    print("Max IMR:     {:.3f}".format(np.amax(filtered_imrs)))
+        
 if __name__ == '__main__':
     main()
