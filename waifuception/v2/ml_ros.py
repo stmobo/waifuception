@@ -55,7 +55,7 @@ def ml_random_oversampling(df, oversample_pct):
     return df.loc[cloned_samples]
 
 def main():
-    df = pandas.load_csv(sys.argv[1], index_col='id')
+    df = pd.load_csv(sys.argv[1], index_col='id')
     filtered = df.filter(items=classes.ALL_TAGS)
     
     labels = []
