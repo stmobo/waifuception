@@ -58,6 +58,15 @@ def main():
     df = pandas.load_csv(sys.argv[1], index_col='id')
     filtered = df.filter(items=classes.ALL_TAGS)
     
+    labels = []
+    sample_counts = np.sum(filtered.values, axis=0)
+    for idx, label in enumerate(classes.ALL_TAGS):
+        if sample_counts[idx] < 500:
+            print("Excluding label {} (has only {} samples)".format(label, sample_counts[idx]))
+        else:
+            labels.append(label)
+            
+    filtered = df.filter(items=labels)
     oversample_pct = float(sys.argv[2])
     cloned_df = ml_random_oversampling(filtered, oversample_pct)
     
