@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 import sys
-from . import classes
+import classes
 
 def calculate_ir(filtered_df, cloned_samples):
     df_counts = np.sum(filtered_df.values, axis=0)
