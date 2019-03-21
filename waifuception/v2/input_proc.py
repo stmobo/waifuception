@@ -18,10 +18,11 @@ def _parse_proto(example_proto):
     }
 
     parsed_features = tf.parse_single_example(example_proto, features)
-    raw_data = tf.io.read_file(parsed_features['filename'])
+    raw_data = tf.io.read_file(tf.string_join(['/mnt/data/dl/danbooru2018/original/', parsed_features['filename']]))
     labels = tf.cast(parsed_features['labels'], tf.float32)
 
-    img = tf.io.decode_image(raw_data)
+    img = tf.io.decode_image(raw_data, channels=3)
+    img.set_shape([None, None, 3])
 
     img = tf.image.resize(img, (224, 224))
     img = tf.image.random_flip_left_right(img)
@@ -42,12 +43,12 @@ def setup_input_pipeline(records_file, dataset_length, batch_size, val_split=0.1
     eval_dataset  = dataset.take(eval_len)
     eval_dataset  = eval_dataset.apply(tf.data.experimental.shuffle_and_repeat(500))
     eval_dataset  = eval_dataset.apply(tf.data.experimental.map_and_batch(_parse_proto, batch_size, num_parallel_calls=os.cpu_count()))
-    eval_dataset  = eval_dataset.prefetch(1)
+    eval_dataset  = eval_dataset.prefetch(8)
 
     train_dataset = dataset.skip(eval_len)
     train_dataset = train_dataset.apply(tf.data.experimental.shuffle_and_repeat(6000))
     train_dataset = train_dataset.apply(tf.data.experimental.map_and_batch(_parse_proto, batch_size, num_parallel_calls=os.cpu_count()))
-    train_dataset = train_dataset.prefetch(1)
+    train_dataset = train_dataset.prefetch(8)
 
     n_batches_train = math.ceil(train_len / batch_size)
     n_batches_eval = math.ceil(eval_len / batch_size)

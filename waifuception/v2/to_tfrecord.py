@@ -21,17 +21,18 @@ def main():
     print("Loading metadata...")
     df = pd.read_csv(sys.argv[1], index_col=0)
 
+    print("Total dataset length: {}".format(len(df)))
+
     if len(sys.argv) > 3:
         n_samples = int(sys.argv[3])
         df = df.sample(n_samples)
+
+    print(df.head())
 
     n = 0
     with tf.python_io.TFRecordWriter(sys.argv[2]) as writer:
         for idx, row in df.iterrows():
             try:
-                if row['id'] not in have_ids:
-                    continue
-
                 fname = fnames[row['id']]
                 labels = row[1:]
 
@@ -42,12 +43,14 @@ def main():
 
                 example_proto = tf.train.Example(features=tf.train.Features(feature=features))
                 writer.write(example_proto.SerializeToString())
-            except OSError:
+            except (OSError, KeyError):
                 pass
 
-        n += 1
-        if n % 1000 == 0:
-            print("Processed {} rows...".format(n))
+            n += 1
+            if n % 1000 == 0:
+                print("Processed {} rows...".format(n))
+
+    print("Output {} records.".format(n))
 
 if __name__ == '__main__':
     main()

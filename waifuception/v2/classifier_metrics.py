@@ -6,11 +6,11 @@ def false_positive_rate(y_true, y_pred):
     in_shape = K.shape(y_pred)
     final_shape = tf.stack([in_shape[0], -1])
 
-    y_true = K.reshape(y_true, final_shape)
-    y_pred = K.reshape(y_pred, final_shape)
+    y_true = K.round(K.reshape(y_true, final_shape))
+    y_pred = K.round(K.sigmoid(K.reshape(y_pred, final_shape)))
 
-    fp = K.sum(K.cast(K.greater(K.round(y_pred), K.round(y_true)), 'float32'), axis=1) # false positive
-    cn = K.sum(K.cast(K.equal(K.round(y_true), 0), 'float32'), axis=1)                 # condition negative
+    fp = K.sum(K.cast(K.greater(y_pred, y_true), 'float32'), axis=1)   # false positive
+    cn = K.sum(K.cast(K.equal(y_true, 0), 'float32'), axis=1)          # condition negative
 
     return K.mean(fp / (cn + K.epsilon()))
 
@@ -18,11 +18,11 @@ def false_negative_rate(y_true, y_pred):
     in_shape = K.shape(y_pred)
     final_shape = tf.stack([in_shape[0], -1])
 
-    y_true = K.reshape(y_true, final_shape)
-    y_pred = K.reshape(y_pred, final_shape)
+    y_true = K.round(K.reshape(y_true, final_shape))
+    y_pred = K.round(K.sigmoid(K.reshape(y_pred, final_shape)))
 
-    fn = K.sum(K.cast(K.greater(K.round(y_true), K.round(y_pred)), 'float32'), axis=1) # false negative
-    cp = K.sum(K.cast(K.equal(K.round(y_true), 1), 'float32'), axis=1)                 # condition positive
+    fn = K.sum(K.cast(K.greater(y_true, y_pred), 'float32'), axis=1) # false negative
+    cp = K.sum(K.cast(K.equal(y_true, 1), 'float32'), axis=1)        # condition positive
 
     return K.mean(fn / (cp + K.epsilon()))
 
@@ -31,7 +31,7 @@ def true_positive_rate(y_true, y_pred):
     final_shape = tf.stack([in_shape[0], -1])
 
     y_true = K.reshape(y_true, final_shape)
-    y_pred = K.reshape(y_pred, final_shape)
+    y_pred = K.sigmoid(K.reshape(y_pred, final_shape))
 
     predicted_true = K.equal(K.round(y_pred), 1)
     condition_true = K.equal(K.round(y_true), 1)
@@ -52,7 +52,7 @@ def true_negative_rate(y_true, y_pred):
     final_shape = tf.stack([in_shape[0], -1])
 
     y_true = K.reshape(y_true, final_shape)
-    y_pred = K.reshape(y_pred, final_shape)
+    y_pred = K.sigmoid(K.reshape(y_pred, final_shape))
 
     predicted_false = K.equal(K.round(y_pred), 0)
     condition_false = K.equal(K.round(y_true), 0)
