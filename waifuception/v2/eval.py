@@ -75,36 +75,32 @@ def main():
     preds = model.predict(np.array(xs), batch_size=len(xs))
     pred_score = sigmoid(preds)
 
-    print(pred_score.shape)
-
     roc_tpr = []
     roc_fpr = []
 
-    cond_positive = (ys > 0)
-    cond_negative = (ys < 1)
+    cond_positive = (ys == 1)
+    cond_negative = (ys == 0)
 
-    n_cp = np.sum(np.where(cond_positive, 1, 0), axis=0).astype(np.float)
-    n_cn = np.sum(np.where(cond_negative, 1, 0), axis=0).astype(np.float)
+    cp = np.sum(np.where(cond_positive, 1, 0), axis=0).astype(np.float)
+    cn = np.sum(np.where(cond_negative, 1, 0), axis=0).astype(np.float)
+    eps = np.finfo(float).eps
 
     for threshold in np.linspace(0.0, 1.0, 50):
         pred_positive = (pred_score >= threshold)
         true_positive = np.where(pred_positive & cond_positive, 1, 0)
         false_positive = np.where(pred_positive & cond_negative, 1, 0)
 
-        n_tp = np.sum(true_positive, axis=0).astype(np.float)
-        n_fp = np.sum(false_positive, axis=0).astype(np.float)
+        tp = np.sum(true_positive, axis=0).astype(np.float)
+        fp = np.sum(false_positive, axis=0).astype(np.float)
 
-        tpr = []
-        fpr = []
-        for tp, fp, cp, cn in zip(n_tp, n_fp, n_cp, n_cn):
-            if cp < 1 or cn < 1:
-                continue
+        tpr = tp / (cp + eps)
+        fpr = fp / (cn + eps)
 
-            tpr.append(tp / cp)
-            fpr.append(fp / cn)
+        mean_tpr = np.sum(tpr) / np.sum(np.where(cp > 0, 1, 0))
+        mean_fpr = np.sum(fpr) / np.sum(np.where(cn > 0, 1, 0))
 
-        roc_fpr.append(np.mean(fpr))
-        roc_tpr.append(np.mean(tpr))
+        roc_tpr.append(mean_tpr)
+        roc_fpr.append(mean_fpr)
 
     for pred, true_label, l in zip(pred_score[0], ys[0], labels):
         predicted_label = False
@@ -114,9 +110,11 @@ def main():
         true_label = (true_label > 0)
         print("{}: {} / {}".format(l, predicted_label, true_label))
 
-    plt.plot(roc_fpr, roc_tpr, 'k', label='ROC')
-    plt.plot([0, 1], [0, 1], 'r--')
-    plt.title('Receiver Operating Characteristic')
+    auc = np.trapz(roc_tpr, list(reversed(roc_fpr)))
+
+    plt.plot(roc_fpr, roc_tpr, 'k', label='Model ROC')
+    plt.plot([0, 1], [0, 1], 'r--', label='Random Chance')
+    plt.title('Receiver Operating Characteristic (AUC={:.4f})'.format(auc))
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.legend()
