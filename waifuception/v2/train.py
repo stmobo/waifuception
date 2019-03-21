@@ -30,7 +30,9 @@ def dataset_to_iterator(ds):
             yield inputs, labels
             n_failures = 0
         except:
-            traceback.print_exc()
+            t, v, tb = sys.exc_info()
+            print(str(v))
+
             n_failures += 1
 
             if n_failures > 3:
@@ -38,16 +40,16 @@ def dataset_to_iterator(ds):
                 raise
 def main():
     base_lr = 0.045
-    batch_size = 32
-    weights_dir = '/mnt/data/waifuception-v2-checkpoints/1/'
+    batch_size = 64
+    weights_dir = '/mnt/data/waifuception-v2-checkpoints/2/'
 
     dataset_length = 331978
 
     try:
-        if osp.isdir('/mnt/data/tensorboard-logs'):
-            shutil.rmtree('/mnt/data/tensorboard-logs')
+        if osp.isdir('/mnt/data/tensorboard-logs/2'):
+            shutil.rmtree('/mnt/data/tensorboard-logs/2')
 
-        os.mkdir('/mnt/data/tensorboard-logs')
+        os.mkdir('/mnt/data/tensorboard-logs/2')
     except OSError:
         print("Warning: could not clear tensorboard data")
 
@@ -88,9 +90,9 @@ def main():
         initial_epoch    = resume_from_epoch,
         callbacks=[
             callbacks.ModelCheckpoint(osp.join(weights_dir, 'weights.{epoch:03d}.{val_loss:.04f}.hdf5')),
-            callbacks.LearningRateScheduler(lambda epoch, cur_lr: base_lr * np.power(0.87, epoch)),
+            callbacks.LearningRateScheduler(lambda epoch, cur_lr: base_lr * np.power(0.87, (epoch//2))),
             #callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=2, min_lr=0.0001),
-            callbacks.TensorBoard('/mnt/data/tensorboard-logs', update_freq=700),
+            callbacks.TensorBoard('/mnt/data/tensorboard-logs/2', update_freq=700),
         ]
     )
 

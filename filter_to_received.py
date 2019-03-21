@@ -5,7 +5,7 @@ import sys
 
 def main():
     base_path = Path('/mnt/data/dl/danbooru2018/original')
-    
+
     have_ids = []
     fnames = {}
     jpg_fnames = {}
@@ -14,26 +14,23 @@ def main():
             iid = int(f.stem)
             have_ids.append(iid)
             fnames[iid] = f.parent.name + '/' + f.name
-            jpg_fnames[iid] = f.parent.name + '/' + f.stem + '.jpg'
-    
+
     print("Received {} images so far".format(len(have_ids)))
-    
-    df = pd.read_csv('./2018-full.csv.gz', index_col=None)    
+
+    df = pd.read_csv(sys.argv[1], index_col=None)
     df_out = df[df['id'].isin(have_ids)]
     print(df_out.head())
-    
+
     original_filenames = df_out.agg(lambda row: str(fnames[row['id']]), axis=1)
-    preprocessed_filenames = df_out.agg(lambda row: str(jpg_fnames[row['id']]), axis=1)
-    
+
     df_out.insert(2, 'original_filename', original_filenames)
-    df_out.insert(2, 'filename', preprocessed_filenames)
     df_out.drop(['ext', 'image_width', 'image_height', 'source', 'character'], inplace=True, axis=1)
     print(df_out.head())
-    
+
     print("Received {} training set images so far".format(len(df_out)))
     sys.stdout.flush()
 
-    df_out.to_csv('./2018-current.csv.gz', compression='gzip')
-    
+    df_out.to_csv(sys.argv[2])
+
 if __name__ == '__main__':
     main()

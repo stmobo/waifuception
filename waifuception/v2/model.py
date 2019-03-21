@@ -53,7 +53,7 @@ def build_model(weights_dir):
     x = residual_block(x, [512, 512, 2048], 'conv6_2')
     x = residual_block(x, [512, 512, 2048], 'conv6_3')
     x = GlobalAveragePooling2D()(x)
-    x = Dense(107)(x)
+    x = Dense(106)(x)
 
     model = Model(inputs=base_model.input, outputs=x)
 
@@ -82,7 +82,7 @@ def build_model(weights_dir):
     return model, top_weightsfile_epoch
 
 def weighted_crossentropy(y_true, y_pred):
-    return tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, 12)
+    return tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, 13 * 1.5)
 
 def compile_model(model, lr):
     optimizer = RMSprop(lr=lr, rho=0.9, epsilon=1.0, clipvalue=2.0)

@@ -21,6 +21,9 @@ def _parse_proto(example_proto):
     raw_data = tf.io.read_file(tf.string_join(['/mnt/data/dl/danbooru2018/original/', parsed_features['filename']]))
     labels = tf.cast(parsed_features['labels'], tf.float32)
 
+    # drop the 'female' tag (assume it's 1-p(male))
+    labels = labels[1:]
+
     img = tf.io.decode_image(raw_data, channels=3)
     img.set_shape([None, None, 3])
 
