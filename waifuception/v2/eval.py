@@ -111,6 +111,7 @@ def main():
         print("{}: {} / {}".format(l, predicted_label, true_label))
 
     auc = np.trapz(roc_tpr, list(reversed(roc_fpr)))
+    print("AUC = {:.4f}".format(auc))
 
     plt.plot(roc_fpr, roc_tpr, 'k', label='Model ROC')
     plt.plot([0, 1], [0, 1], 'r--', label='Random Chance')

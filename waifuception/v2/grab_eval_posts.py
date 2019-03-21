@@ -39,6 +39,7 @@ def process_metadata(meta):
 
 def main():
     output_dir = Path(sys.argv[1])
+    meta_out_path = output_dir / 'meta.json'
     post_meta = []
 
     for post in sys.argv[2:]:
@@ -47,7 +48,12 @@ def main():
         except:
             traceback.print_exc()
 
-    with open(str(output_dir / 'meta.json'), 'w', encoding='utf-8') as f:
+    if meta_out_path.is_file():
+        with open(str(meta_out_path), 'r', encoding='utf-8') as f:
+            m = json.load(f)
+            post_meta.extend(m)
+
+    with open(str(meta_out_path), 'w', encoding='utf-8') as f:
         json.dump(post_meta, f)
 
 if __name__ == '__main__':
