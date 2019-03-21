@@ -62,22 +62,28 @@ attire_tags = [
 ]
 
 tags_list = [
-    [True,  gender_tags,        'softmax', 'gender'],       
-    [True,  rating_classes,     'softmax', 'rating'],    
-    [True,  hair_color_tags,    'sigmoid', 'hair_color'],   
-    [True,  hair_length_tags,   'softmax', 'hair_length'],  
-    [True,  hair_style_tags,    'sigmoid', 'hair_style'],   
-    [True,  eye_color_tags,     'sigmoid', 'eye_color'],    
-    [True,  eye_misc_tags,      'sigmoid', 'eye_misc'],     
-    [True,  expression_tags,    'sigmoid', 'expression'],   
-    [True,  breast_tags,        'softmax', 'breasts'],       
-    [True,  ass_tags,           'sigmoid', 'ass'],          
+    [True,  gender_tags,        'softmax', 'gender'],
+    [True,  rating_classes,     'softmax', 'rating'],
+    [True,  hair_color_tags,    'sigmoid', 'hair_color'],
+    [True,  hair_length_tags,   'softmax', 'hair_length'],
+    [True,  hair_style_tags,    'sigmoid', 'hair_style'],
+    [True,  eye_color_tags,     'sigmoid', 'eye_color'],
+    [True,  eye_misc_tags,      'sigmoid', 'eye_misc'],
+    [True,  expression_tags,    'sigmoid', 'expression'],
+    [True,  breast_tags,        'softmax', 'breasts'],
+    [True,  ass_tags,           'sigmoid', 'ass'],
     [True,  pose_tags,          'softmax', 'pose'],
-    [True,  attire_tags,        'sigmoid', 'attire'],       
+    [True,  attire_tags,        'sigmoid', 'attire'],
 ]
 
-all_tags = []
+categories = [c[3] for c in tags_list]
 
-for active, tag_list, _, __ in tags_list:
+all_tags = []
+label_categories = {}
+
+for active, tag_list, _, category in tags_list:
     if active:
         all_tags.extend(tag_list)
+
+    for label in tag_list:
+        label_categories[label] = category
